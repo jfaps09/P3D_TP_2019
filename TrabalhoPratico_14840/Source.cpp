@@ -1,38 +1,17 @@
-#pragma comment(lib, "glew32s.lib")
-#pragma comment(lib, "glfw3.lib")
-#pragma comment(lib, "opengl32.lib")
-
-#include <iostream>
-#include <vector>
-
-#define GLEW_STATIC
-#include <GL\glew.h>
-
-#include <GLFW\glfw3.h>
-
-#include <glm/glm.hpp> // vec3, vec4, ivec4, mat4, ...
-#include <glm/gtc/matrix_transform.hpp> // translate, rotate, scale, perspective, ...
-#include <glm/gtc/type_ptr.hpp> // value_ptr
-
-void init(void);
-
-#define WIDTH 800
-#define HEIGHT 600
-
+#include "Header.h"
 GLfloat ZOOM = 10.0f;
-GLfloat ANGLE = 0.0f;
 
-void scrollCallback(GLFWwindow *window, double xoffset, double yoffset) {
-	// Se faz zoom in
-	if (yoffset == 1) {
-		// Incremento no zoom, varia com a distância da câmara
-		ZOOM += fabs(ZOOM) * 0.1f;
-	}
-	// Senão, se faz zoom out
-	else if (yoffset == -1) {
-		// Incremento no zoom, varia com a distância da câmara
-		ZOOM -= fabs(ZOOM) * 0.1f;
-	}
+void init(void) {
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glEnable(GL_DEPTH_TEST);
+	//glEnable(GL_CULL_FACE);
+}
+
+void scrollCallback(GLFWwindow *window, double xoffset, double yoffset) {		// Incremento no zoom, varia com a distância da câmara
+	if (yoffset == -1)		ZOOM += fabs(ZOOM) * 0.2f;	// Se faz zoom in
+
+	else if (yoffset == 1) ZOOM -= fabs(ZOOM) * 0.2f;	//Senão, se faz zoom out
+
 	std::cout << "ZOOM = " << ZOOM << std::endl;
 }
 
@@ -110,11 +89,23 @@ void display(std::vector<glm::vec3> obj, glm::mat4 mvp) {
 }
 
 int main(void) {
-	std::vector<glm::vec3> obj = Load3DModel();
-	/*for (auto i : model)
-		std::cout << "x:" << i.x << " y:" << i.y << " z:" << i.z << std::endl;*/
-
 	GLFWwindow *window;
+
+	/*std::vector< glm::vec3 > vertices;
+	std::vector< glm::vec2 > uvs;
+	std::vector< glm::vec3 > normals; // Won't be used at the moment.
+
+	if (loadOBJ("Iron_Man.obj", vertices, uvs, normals))
+		printf("LOAD SUCCESFUL!");
+	else
+		printf("not");
+
+	for (auto i : vertices)
+		std::cout << "x:" << i.x << " y:" << i.y << " z:" << i.z << std::endl;
+
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);*/
+
+	std::vector<glm::vec3> obj = Load3DModel();	
 
 	if (!glfwInit()) return -1;
 
@@ -127,27 +118,29 @@ int main(void) {
 	glfwMakeContextCurrent(window);
 
 	glewInit();
-
 	init();
 
 	glfwSetScrollCallback(window, scrollCallback);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-	// Projection
-	glm::mat4 projection = glm::perspective(glm::radians(45.0f), float(WIDTH) / float(HEIGHT), 0.1f, 1000.f);
-	//glm::mat4 projection = glm::ortho(-2.0f, 2.0f, -2.0f, 2.0f, 0.0f, 20.0f);
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), float(WIDTH) / float(HEIGHT), 0.01f, 10000.f);	//Projection
 
-	double xPos, yPos;
-	double xPrevPos, yPrevPos;
-
+	double xPos, yPos, xPrevPos, yPrevPos;
 	glfwGetCursorPos(window, &xPos, &yPos);
 
-	// Model
-	glm::mat4 model = glm::mat4(1.0f);
+	//!---------LIGHTING--------------!
+		//glEnable(GL_NORMALIZE);
+		//glEnable(GL_LIGHTING);
+		//glEnable(GL_LIGHT0);
+		//glEnable(GL_LIGHT1);
+
+	glm::mat4 model = glm::mat4(1.0f);	//ModelO
 
 	while (!glfwWindowShouldClose(window)) {	
-
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		xPrevPos = xPos;
+		yPrevPos = yPos;
 
 		// View
 		glm::mat4 view = glm::lookAt(
@@ -156,25 +149,21 @@ int main(void) {
 			glm::vec3(0.0f, 1.0f, 0.0f)		// Vector vertical
 		);
 
-		
-		xPrevPos = xPos;
-		yPrevPos = yPos;
 	
 		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS) {
-			// Vai efetuando uma rotação ao objeto (apenas para podermos ver todas as faces desenhadas).
+			//translate --> Move obejct --> model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
 			glfwGetCursorPos(window, &xPos, &yPos);
 
-			if(xPos < xPrevPos)
-				model = glm::rotate(model, ANGLE - 0.01f, glm::normalize(glm::vec3(0, float(yPos), 0.0f)));
-			else if(xPos > xPrevPos)
-				model = glm::rotate(model, ANGLE + 0.01f, glm::normalize(glm::vec3(0, float(yPos), 0.0f)));
+			// Vai efetuando uma rotação ao objeto (apenas para podermos ver todas as faces desenhadas).
 
-			if (yPos < yPrevPos)
-				model = glm::rotate(model, ANGLE - 0.01f, glm::normalize(glm::vec3(float(xPos), 0, 0.0f)));
-			else if (yPos > yPrevPos)
-				model = glm::rotate(model, ANGLE + 0.01f, glm::normalize(glm::vec3(float(xPos), 0, 0.0f)));
+			//X
+			if(xPos < xPrevPos)			model = glm::rotate(model, -0.01f, glm::vec3(0, 1.0f, 0.0f));
+			else if(xPos > xPrevPos)	model = glm::rotate(model, 0.01f, glm::vec3(0, 1.0f, 0.0f));
+
+			//Y
+			if (yPos < yPrevPos)		model = glm::rotate(model, -0.01f, glm::vec3(1.0f, 0, 0.0f));
+			else if (yPos > yPrevPos)	model = glm::rotate(model, 0.01f, glm::vec3(1.0f, 0, 0.0f));
 		}
-
 
 		// MVP
 		glm::mat4 mvp = projection * view * model;
@@ -187,10 +176,4 @@ int main(void) {
 
 	glfwTerminate();
 	return 0;
-}
-
-void init(void) {
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-	glEnable(GL_DEPTH_TEST);
-	//glEnable(GL_CULL_FACE);
 }
