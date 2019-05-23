@@ -19,4 +19,7 @@
 #define WIDTH 1200
 #define HEIGHT 900
 
+#define NumVAOs 1
+#define NumBuffers 2 // Vértices, Cores
+
 bool loadOBJ(const char * path, std::vector < glm::vec3 > & out_vertices, std::vector < glm::vec2 > & out_uvs, std::vector < glm::vec3 > & out_normals);

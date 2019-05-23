@@ -116,11 +116,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="LoadShaders.cpp" />
     <ClCompile Include="ObjLoader.cpp" />
     <ClCompile Include="Source.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Header.h" />
+    <ClInclude Include="LoadShaders.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\triangles.frag" />
+    <None Include="shaders\triangles.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

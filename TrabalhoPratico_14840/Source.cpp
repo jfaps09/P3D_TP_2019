@@ -1,9 +1,21 @@
 #include "Header.h"
+#include "LoadShaders.h"
+
+GLuint VAOs[NumVAOs];
+GLuint Buffers[NumBuffers];
+const GLuint NumVertices = 3;
+
+GLuint programa;
+
 GLfloat ZOOM = 10.0f;
 float anguloX = 0.0f, anguloY = 0.0f;
 bool buttonPressed = false;
 double xPrevPos, yPrevPos;
 static float updateRotX = 0, updateRotY = 0;
+
+std::vector< glm::vec3 > vertices;
+std::vector< glm::vec2 > uvs;
+std::vector< glm::vec3 > normals;
 
 void init(void) {
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -21,26 +33,22 @@ void scrollCallback(GLFWwindow *window, double xoffset, double yoffset) {		// In
 
 void cursorPosCallback(GLFWwindow *window, double xPos, double yPos) {
 	if (buttonPressed) {
-		updateRotX = anguloX;
-		updateRotY = anguloY;
-
-		anguloX += (float)(((xPos - xPrevPos) * 180.0) / HEIGHT);
-		printf("angulo X: %f\n", anguloX);
-
-		anguloY += (float)(((yPos - yPrevPos) * 180.0) / HEIGHT);
-		printf("angulo Y: %f\n", anguloY);
+		anguloX = (float)(((xPos - xPrevPos) * 180.0) / WIDTH) + updateRotX;
+		anguloY = (float)(((yPos - yPrevPos) * 180.0) / HEIGHT)+ updateRotY;
 	}
 }
 
 void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods) {		//coise
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
 		glfwGetCursorPos(window, &xPrevPos, &yPrevPos);
+
+		updateRotX = anguloX;
+		updateRotY = anguloY;
+
 		buttonPressed = true;
 	}
 	else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
-	{
 		buttonPressed = false;
-	}
 }
 
 std::vector<glm::vec3> Load3DModel(void) {
@@ -116,17 +124,19 @@ void display(std::vector<glm::vec3> obj, glm::mat4 mvp) {
 	glEnd();
 }
 
+void print_error(int error, const char *description) {
+	std::cout << description << std::endl;
+}
+
 int main(void) {
 	GLFWwindow *window;
 
-	std::vector< glm::vec3 > vertices;
-	std::vector< glm::vec2 > uvs;
-	std::vector< glm::vec3 > normals; // Won't be used at the moment.
+	glfwSetErrorCallback(print_error);
 
-	if (loadOBJ("Iron_Man.obj", vertices, uvs, normals))
+	/*if (loadOBJ("Iron_Man.obj", vertices, uvs, normals))
 		printf("LOAD SUCCESFUL!");
 	else
-		printf("not");
+		printf("not");*/
 
 	/*glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);*/
 
@@ -134,13 +144,15 @@ int main(void) {
 
 	if (!glfwInit()) return -1;
 
-	window = glfwCreateWindow(WIDTH, HEIGHT, "P3D - Trabalho Pratico 1 (Part #1)", NULL, NULL);
+	window = glfwCreateWindow(WIDTH, HEIGHT, "P3D - Trabalho Pratico", NULL, NULL);
 	if (window == NULL) {
 		glfwTerminate();
 		return -1;
 	}
 	glfwMakeContextCurrent(window);
 
+	// Inicia o gestor de extensões GLEW
+	glewExperimental = GL_TRUE;
 	glewInit();
 	init();
 
@@ -172,10 +184,10 @@ int main(void) {
 		);
 
 		//X
-		model1 = glm::rotate(glm::mat4(), anguloX*0.0002f, glm::vec3(0, 1, 0));
+		model1 = glm::rotate(glm::mat4(), anguloX*0.01f, glm::vec3(0, 1, 0));
 
 		//Y
-		model2 = glm::rotate(glm::mat4(), anguloY*0.0002f, glm::vec3(1, 0, 0));
+		model2 = glm::rotate(glm::mat4(), anguloY*0.01f, glm::vec3(1, 0, 0));
 
 		model = model1 * model2;
 
