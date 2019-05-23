@@ -1,5 +1,8 @@
 #include "Header.h"
 GLfloat ZOOM = 10.0f;
+float anguloX = 30.0f, anguloY = 30.0f;
+bool buttonPressed = false;
+double xPrevPos, yPrevPos;
 
 void init(void) {
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -13,6 +16,29 @@ void scrollCallback(GLFWwindow *window, double xoffset, double yoffset) {		// In
 	else if (yoffset == 1) ZOOM -= fabs(ZOOM) * 0.2f;	//Senão, se faz zoom out
 
 	std::cout << "ZOOM = " << ZOOM << std::endl;
+}
+
+void cursorPosCallback(GLFWwindow *window, double xPos, double yPos) {
+	static float updateRotX = 0, updateRotY = 0;
+	if (buttonPressed) {
+		//updateRotX = anguloX;
+		//updateRotY = anguloY;
+
+		anguloX = (float)(((xPos - xPrevPos) * 180.0) / HEIGHT) + updateRotX;
+		printf("angulo X: %f\n", anguloX);
+
+		anguloY = (float)(((yPos - yPrevPos) * 180.0) / HEIGHT) + updateRotY;
+		printf("angulo Y: %f\n", anguloY);
+	}
+}
+
+void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods) {		//coise
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+		glfwGetCursorPos(window, &xPrevPos, &yPrevPos);
+		buttonPressed = true;
+	}
+	else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
+		buttonPressed = false;
 }
 
 std::vector<glm::vec3> Load3DModel(void) {
@@ -91,7 +117,7 @@ void display(std::vector<glm::vec3> obj, glm::mat4 mvp) {
 int main(void) {
 	GLFWwindow *window;
 
-	/*std::vector< glm::vec3 > vertices;
+	std::vector< glm::vec3 > vertices;
 	std::vector< glm::vec2 > uvs;
 	std::vector< glm::vec3 > normals; // Won't be used at the moment.
 
@@ -100,10 +126,7 @@ int main(void) {
 	else
 		printf("not");
 
-	for (auto i : vertices)
-		std::cout << "x:" << i.x << " y:" << i.y << " z:" << i.z << std::endl;
-
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);*/
+	/*glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);*/
 
 	std::vector<glm::vec3> obj = Load3DModel();	
 
@@ -120,13 +143,12 @@ int main(void) {
 	glewInit();
 	init();
 
+	glfwSetMouseButtonCallback(window, mouseButtonCallback);
+	glfwSetCursorPosCallback(window, cursorPosCallback);
 	glfwSetScrollCallback(window, scrollCallback);
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	//glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	glm::mat4 projection = glm::perspective(glm::radians(45.0f), float(WIDTH) / float(HEIGHT), 0.01f, 10000.f);	//Projection
-
-	double xPos, yPos, xPrevPos, yPrevPos;
-	glfwGetCursorPos(window, &xPos, &yPos);
 
 	//!---------LIGHTING--------------!
 		//glEnable(GL_NORMALIZE);
@@ -134,13 +156,12 @@ int main(void) {
 		//glEnable(GL_LIGHT0);
 		//glEnable(GL_LIGHT1);
 
-	glm::mat4 model = glm::mat4(1.0f);	//ModelO
+	glm::mat4 model = glm::mat4(1.0f);	//Model
+	glm::mat4 model1 = glm::mat4(1.0f);	//Model1
+	glm::mat4 model2 = glm::mat4(1.0f);	//Model2
 
 	while (!glfwWindowShouldClose(window)) {	
 		glClear(GL_COLOR_BUFFER_BIT);
-
-		xPrevPos = xPos;
-		yPrevPos = yPos;
 
 		// View
 		glm::mat4 view = glm::lookAt(
@@ -149,21 +170,15 @@ int main(void) {
 			glm::vec3(0.0f, 1.0f, 0.0f)		// Vector vertical
 		);
 
-	
-		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS) {
-			//translate --> Move obejct --> model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-			glfwGetCursorPos(window, &xPos, &yPos);
+		//X
+		model1 = glm::rotate(glm::mat4(), anguloX*0.05f, glm::vec3(0, 1.0f, 0.0f));
+		//else if(xPos > xPrevPos)	model = glm::rotate(model, anguloX*0.02f, glm::vec3(0, 1.0f, 0.0f));
 
-			// Vai efetuando uma rotação ao objeto (apenas para podermos ver todas as faces desenhadas).
+		//Y
+		model2 = glm::rotate(glm::mat4(), anguloY*0.05f, glm::vec3(1.0f, 0, 0.0f));
+		//else if (yPos > yPrevPos)	model = glm::rotate(model, anguloY*0.02f, glm::vec3(1.0f, 0, 0.0f));
 
-			//X
-			if(xPos < xPrevPos)			model = glm::rotate(model, -0.01f, glm::vec3(0, 1.0f, 0.0f));
-			else if(xPos > xPrevPos)	model = glm::rotate(model, 0.01f, glm::vec3(0, 1.0f, 0.0f));
-
-			//Y
-			if (yPos < yPrevPos)		model = glm::rotate(model, -0.01f, glm::vec3(1.0f, 0, 0.0f));
-			else if (yPos > yPrevPos)	model = glm::rotate(model, 0.01f, glm::vec3(1.0f, 0, 0.0f));
-		}
+		model = model1 * model2;
 
 		// MVP
 		glm::mat4 mvp = projection * view * model;
