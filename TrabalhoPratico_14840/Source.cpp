@@ -1,8 +1,9 @@
 #include "Header.h"
 GLfloat ZOOM = 10.0f;
-float anguloX = 30.0f, anguloY = 30.0f;
+float anguloX = 0.0f, anguloY = 0.0f;
 bool buttonPressed = false;
 double xPrevPos, yPrevPos;
+static float updateRotX = 0, updateRotY = 0;
 
 void init(void) {
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -19,15 +20,14 @@ void scrollCallback(GLFWwindow *window, double xoffset, double yoffset) {		// In
 }
 
 void cursorPosCallback(GLFWwindow *window, double xPos, double yPos) {
-	static float updateRotX = 0, updateRotY = 0;
 	if (buttonPressed) {
-		//updateRotX = anguloX;
-		//updateRotY = anguloY;
+		updateRotX = anguloX;
+		updateRotY = anguloY;
 
-		anguloX = (float)(((xPos - xPrevPos) * 180.0) / HEIGHT) + updateRotX;
+		anguloX += (float)(((xPos - xPrevPos) * 180.0) / HEIGHT);
 		printf("angulo X: %f\n", anguloX);
 
-		anguloY = (float)(((yPos - yPrevPos) * 180.0) / HEIGHT) + updateRotY;
+		anguloY += (float)(((yPos - yPrevPos) * 180.0) / HEIGHT);
 		printf("angulo Y: %f\n", anguloY);
 	}
 }
@@ -38,7 +38,9 @@ void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods) {
 		buttonPressed = true;
 	}
 	else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
+	{
 		buttonPressed = false;
+	}
 }
 
 std::vector<glm::vec3> Load3DModel(void) {
@@ -137,7 +139,6 @@ int main(void) {
 		glfwTerminate();
 		return -1;
 	}
-
 	glfwMakeContextCurrent(window);
 
 	glewInit();
@@ -146,7 +147,7 @@ int main(void) {
 	glfwSetMouseButtonCallback(window, mouseButtonCallback);
 	glfwSetCursorPosCallback(window, cursorPosCallback);
 	glfwSetScrollCallback(window, scrollCallback);
-	//glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	glm::mat4 projection = glm::perspective(glm::radians(45.0f), float(WIDTH) / float(HEIGHT), 0.01f, 10000.f);	//Projection
 
@@ -171,12 +172,10 @@ int main(void) {
 		);
 
 		//X
-		model1 = glm::rotate(glm::mat4(), anguloX*0.05f, glm::vec3(0, 1.0f, 0.0f));
-		//else if(xPos > xPrevPos)	model = glm::rotate(model, anguloX*0.02f, glm::vec3(0, 1.0f, 0.0f));
+		model1 = glm::rotate(glm::mat4(), anguloX*0.0002f, glm::vec3(0, 1, 0));
 
 		//Y
-		model2 = glm::rotate(glm::mat4(), anguloY*0.05f, glm::vec3(1.0f, 0, 0.0f));
-		//else if (yPos > yPrevPos)	model = glm::rotate(model, anguloY*0.02f, glm::vec3(1.0f, 0, 0.0f));
+		model2 = glm::rotate(glm::mat4(), anguloY*0.0002f, glm::vec3(1, 0, 0));
 
 		model = model1 * model2;
 
