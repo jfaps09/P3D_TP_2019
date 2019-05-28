@@ -27,6 +27,9 @@
     <ClCompile Include="LoadShaders.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="texture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Header.h">
@@ -35,12 +38,24 @@
     <ClInclude Include="LoadShaders.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="texture.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\triangles.frag">
       <Filter>Resource Files\shaders</Filter>
     </None>
     <None Include="shaders\triangles.vert">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
+    <None Include="Iron_Man.mtl">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="shaders\TextureFragmentShader.frag">
+      <Filter>Resource Files\shaders</Filter>
+    </None>
+    <None Include="shaders\TransformVertexShader.vert">
       <Filter>Resource Files\shaders</Filter>
     </None>
   </ItemGroup>

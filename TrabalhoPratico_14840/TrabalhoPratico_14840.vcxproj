@@ -119,12 +119,17 @@
     <ClCompile Include="LoadShaders.cpp" />
     <ClCompile Include="ObjLoader.cpp" />
     <ClCompile Include="Source.cpp" />
+    <ClCompile Include="texture.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Header.h" />
     <ClInclude Include="LoadShaders.h" />
+    <ClInclude Include="texture.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Iron_Man.mtl" />
+    <None Include="shaders\TextureFragmentShader.frag" />
+    <None Include="shaders\TransformVertexShader.vert" />
     <None Include="shaders\triangles.frag" />
     <None Include="shaders\triangles.vert" />
   </ItemGroup>
