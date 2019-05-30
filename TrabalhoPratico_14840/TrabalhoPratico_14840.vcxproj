@@ -124,6 +124,7 @@
   <ItemGroup>
     <ClInclude Include="Header.h" />
     <ClInclude Include="LoadShaders.h" />
+    <ClInclude Include="stb_image.h" />
     <ClInclude Include="texture.hpp" />
   </ItemGroup>
   <ItemGroup>

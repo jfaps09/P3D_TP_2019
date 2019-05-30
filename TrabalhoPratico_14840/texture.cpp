@@ -6,6 +6,8 @@
 
 #include <GLFW/glfw3.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 GLuint loadBMP_custom(const char * imagepath){
 
@@ -106,6 +108,11 @@ GLuint loadTGA_glfw(const char * imagepath){
 
 	// Read the file, call glTexImage2D with the right parameters
 	//glfwLoadTexture2D(imagepath, 0);
+	int width, height;
+	int channels;
+	unsigned char* imageData = stbi_load(imagepath, &width, &height, &channels, 4);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
 
 	// Nice trilinear filtering.
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);

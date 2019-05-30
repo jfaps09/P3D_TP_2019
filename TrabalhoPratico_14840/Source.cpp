@@ -269,7 +269,7 @@ int main(void) {
 	glfwSetCursorPos(window, WIDTH / 2, HEIGHT / 2);
 
 	// Dark blue background
-	glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	
 	//print_gl_info();
 	
