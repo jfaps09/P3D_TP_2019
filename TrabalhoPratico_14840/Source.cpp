@@ -1,6 +1,5 @@
 #include "Header.h"
-
-#include "texture.hpp"
+#include "texture.h"
 
 GLFWwindow* window;
 
@@ -8,15 +7,13 @@ GLuint VAOs[NumVAOs];
 GLuint Buffers[NumBuffers];
 const GLuint NumVertices = 2129;
 glm::mat4 ModelMatrix, ViewMatrix, ProjectionMatrix;
-GLuint programa;
-GLuint MatrixID;
-GLuint Texture;
-GLuint TextureID;
-GLuint vertexbuffer;
-GLuint uvbuffer;
-
-GLuint programID;
-GLuint VertexArrayID;
+GLuint	MatrixID,
+		textura,
+		TextureID,
+		vertexbuffer,
+		uvbuffer,
+		programa,
+		VertexArrayID;
 
 GLfloat ZOOM = 5.0f;
 float anguloX = 0.0f, anguloY = 0.0f;
@@ -32,8 +29,7 @@ std::vector< glm::vec2 > uvs;
 std::vector< glm::vec3 > normals;
 
 void scrollCallback(GLFWwindow *window, double xoffset, double yoffset) {		// Incremento no zoom, varia com a distância da câmara
-	if (yoffset == -1)		ZOOM += fabs(ZOOM) * 0.2f;	// Se faz zoom in
-
+	if(yoffset == -1)		ZOOM += fabs(ZOOM) * 0.2f;	// Se faz zoom in
 	else if (yoffset == 1) ZOOM -= fabs(ZOOM) * 0.2f;	//Senão, se faz zoom out
 
 	std::cout << "ZOOM = " << ZOOM << std::endl;
@@ -83,7 +79,7 @@ void display() {
 
 	// Bind our texture in Texture Unit 0
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, Texture);
+	glBindTexture(GL_TEXTURE_2D, textura);
 	// Set our "myTextureSampler" sampler to use Texture Unit 0
 	glUniform1i(TextureID, 0);
 
@@ -271,7 +267,7 @@ int main(void) {
 	// Dark blue background
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	
-	//print_gl_info();
+	print_gl_info();
 	
 	// Enable depth test
 	glEnable(GL_DEPTH_TEST);
@@ -285,28 +281,28 @@ int main(void) {
 	glBindVertexArray(VertexArrayID);
 
 	ShaderInfo  shaders[] = {
-	{ GL_VERTEX_SHADER,   "shaders/TransformVertexShader.vert" },
-	{ GL_FRAGMENT_SHADER, "shaders/TextureFragmentShader.frag" },
+	{ GL_VERTEX_SHADER,   "shaders/vertexShader.vert" },
+	{ GL_FRAGMENT_SHADER, "shaders/textureShader.frag" },
 	{ GL_NONE, NULL }
 	};
 
-	programID = LoadShaders(shaders);
-	glUseProgram(programID);
+	programa = LoadShaders(shaders);
+	glUseProgram(programa);
 
 	// Get a handle for our "MVP" uniform
-	MatrixID = glGetUniformLocation(programID, "MVP");
+	MatrixID = glGetUniformLocation(programa, "MVP");
 
-	// Load the texture
-	Texture = loadTGA_glfw("Iron_Man_D.tga");
+	//Load texture
+	textura = loadTGA_glfw("Iron_Man_D.tga");
 
-	// Get a handle for our "myTextureSampler" uniform
-	TextureID = glGetUniformLocation(programID, "myTextureSampler");
+	//Get a "handle" for textureSampler uniform
+	TextureID = glGetUniformLocation(programa, "textureSampler");
 
-	// Read our .obj file
-	bool res = loadOBJ("Iron_Man.obj", vertices, uvs, normals);
+	//Read .obj file
+	if (loadOBJ("Iron_Man.obj", vertices, uvs, normals))
+		cout << "File loaded successfuly!" << endl;
 
-	// Load it into a VBO
-
+	//Create and Bind/Activate VBOs
 	glGenBuffers(1, &vertexbuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);
@@ -330,8 +326,8 @@ int main(void) {
 	// Cleanup VBO and shader
 	glDeleteBuffers(1, &vertexbuffer);
 	glDeleteBuffers(1, &uvbuffer);
-	glDeleteProgram(programID);
-	glDeleteTextures(1, &Texture);
+	glDeleteProgram(programa);
+	glDeleteTextures(1, &textura);
 	glDeleteVertexArrays(1, &VertexArrayID);
 
 	// Close OpenGL window and terminate GLFW

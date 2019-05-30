@@ -125,14 +125,12 @@
     <ClInclude Include="Header.h" />
     <ClInclude Include="LoadShaders.h" />
     <ClInclude Include="stb_image.h" />
-    <ClInclude Include="texture.hpp" />
+    <ClInclude Include="texture.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Iron_Man.mtl" />
-    <None Include="shaders\TextureFragmentShader.frag" />
-    <None Include="shaders\TransformVertexShader.vert" />
-    <None Include="shaders\triangles.frag" />
-    <None Include="shaders\triangles.vert" />
+    <None Include="shaders\textureShader.frag" />
+    <None Include="shaders\vertexShader.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

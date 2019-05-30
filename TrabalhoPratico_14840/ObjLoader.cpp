@@ -8,7 +8,7 @@ bool loadOBJ(
 			std::vector<glm::vec2> & out_uvs,
 			std::vector<glm::vec3> & out_normals
 		) {
-			printf("Loading OBJ file %s...\n", path);
+			printf("Loading OBJ file:\n%s...\n", path);
 
 			std::vector<unsigned int> vertexIndices, uvIndices, normalIndices;
 			std::vector<glm::vec3> temp_vertices;
@@ -18,7 +18,7 @@ bool loadOBJ(
 
 			FILE * file = fopen(path, "r");
 			if (file == NULL) {
-				printf("Impossible to open the file ! Are you in the right path ? See Tutorial 1 for details\n");
+				printf("Impossible to open the file! File maybe doeesn't exist?\n");
 				getchar();
 				return false;
 			}
