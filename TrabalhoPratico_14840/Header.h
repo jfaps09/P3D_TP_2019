@@ -25,6 +25,7 @@ void print_gl_info();
 void print_error(int error, const char *description);
 void init(void);
 void display(void);
+void CleanupVBOsShader(void);
 
 #define WIDTH 1200
 #define HEIGHT 900

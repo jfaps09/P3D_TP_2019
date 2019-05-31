@@ -49,10 +49,10 @@
     <None Include="Iron_Man.mtl">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="shaders\textureShader.frag">
+    <None Include="shaders\vertexShader.vert">
       <Filter>Resource Files\shaders</Filter>
     </None>
-    <None Include="shaders\vertexShader.vert">
+    <None Include="shaders\fragmentShader.frag">
       <Filter>Resource Files\shaders</Filter>
     </None>
   </ItemGroup>

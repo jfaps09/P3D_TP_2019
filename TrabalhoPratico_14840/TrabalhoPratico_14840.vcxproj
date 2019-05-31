@@ -129,8 +129,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Iron_Man.mtl" />
-    <None Include="shaders\textureShader.frag" />
     <None Include="shaders\vertexShader.vert" />
+    <None Include="shaders\fragmentShader.frag" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

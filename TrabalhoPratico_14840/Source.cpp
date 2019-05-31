@@ -10,10 +10,14 @@ glm::mat4 ModelMatrix, ViewMatrix, ProjectionMatrix;
 GLuint	MatrixID,
 		textura,
 		TextureID,
+		ViewMatrixID,
+		ModelMatrixID,
+		LightID,
 		vertexbuffer,
 		uvbuffer,
+		normalbuffer,
 		programa,
-		VertexArrayID;
+		VAO;
 
 GLfloat ZOOM = 5.0f;
 float anguloX = 0.0f, anguloY = 0.0f;
@@ -21,8 +25,9 @@ bool buttonPressed = false;
 double xPrevPos, yPrevPos;
 static float updateRotX = 0, updateRotY = 0;
 
-glm::mat4 model1 = glm::mat4(1.0f);	//Model1
-glm::mat4 model2 = glm::mat4(1.0f);	//Model2
+//2 Models so it's easier to apply rotation on X and Y coordinates
+glm::mat4 model1 = glm::mat4(1.0f);
+glm::mat4 model2 = glm::mat4(1.0f);
 
 std::vector< glm::vec3 > vertices;
 std::vector< glm::vec2 > uvs;
@@ -53,65 +58,6 @@ void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods) {
 	}
 	else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
 		buttonPressed = false;
-}
-
-void display() {
-	ProjectionMatrix = glm::perspective(glm::radians(45.0f), float(WIDTH) / float(HEIGHT), 0.01f, 10000.f);	//Projection
-	ViewMatrix = glm::lookAt(
-		glm::vec3(0.0f, 3.0f, ZOOM),	// Posição da câmara no mundo
-		glm::vec3(0.0f, 1.0f, -1.0f),	// Direção para a qual a câmara esta apontada
-		glm::vec3(0.0f, 1.0f, 0.0f)		// Vector vertical
-	);
-
-	//X
-	model1 = glm::rotate(glm::mat4(), anguloX*0.01f, glm::vec3(0, 1, 0));
-
-	//Y
-	model2 = glm::rotate(glm::mat4(), anguloY*0.01f, glm::vec3(1, 0, 0));
-
-	ModelMatrix = model2 * model1;
-
-	glm::mat4 MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
-
-	// Send our transformation to the currently bound shader, 
-	// in the "MVP" uniform
-	glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
-
-	// Bind our texture in Texture Unit 0
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, textura);
-	// Set our "myTextureSampler" sampler to use Texture Unit 0
-	glUniform1i(TextureID, 0);
-
-	// 1rst attribute buffer : vertices
-	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-	glVertexAttribPointer(
-		0,                  // attribute
-		3,                  // size
-		GL_FLOAT,           // type
-		GL_FALSE,           // normalized?
-		0,                  // stride
-		(void*)0            // array buffer offset
-	);
-
-	// 2nd attribute buffer : UVs
-	glEnableVertexAttribArray(1);
-	glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
-	glVertexAttribPointer(
-		1,                                // attribute
-		2,                                // size
-		GL_FLOAT,                         // type
-		GL_FALSE,                         // normalized?
-		0,                                // stride
-		(void*)0                          // array buffer offset
-	);
-
-	// Draw the triangle !
-	glDrawArrays(GL_TRIANGLES, 0, vertices.size());
-
-	glDisableVertexAttribArray(0);
-	glDisableVertexAttribArray(1);
 }
 
 void print_error(int error, const char *description) {
@@ -255,51 +201,64 @@ int main(void) {
 		return -1;
 	}
 
-	// Ensure we can capture the escape key being pressed below
-	glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
-	// Hide the mouse and enable unlimited mouvement
+	//glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
+	//Hide the mouse and enable unlimited mouvement
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-	// Set the mouse at the center of the screen
+	//Set the mouse at the center of the screen
 	glfwPollEvents();
 	glfwSetCursorPos(window, WIDTH / 2, HEIGHT / 2);
 
-	// Dark blue background
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-	
 	print_gl_info();
-	
-	// Enable depth test
-	glEnable(GL_DEPTH_TEST);
-	// Accept fragment if it closer to the camera than the former one
-	glDepthFunc(GL_LESS);
+	init();
 
-	// Cull triangles which normal is not towards the camera
+	while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS && glfwWindowShouldClose(window) == 0) {
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);				//Clear the screen
+
+		display();
+
+		glfwSwapBuffers(window);
+		glfwPollEvents();
+	}
+
+	CleanupVBOsShader();
+	glfwTerminate();				//Close OpenGL window and terminate GLFW
+	return 0;
+}
+
+void init(void) {
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);			//Accept fragment if it's closer to the camera than the previous one
 	glEnable(GL_CULL_FACE);
 
-	glGenVertexArrays(1, &VertexArrayID);
-	glBindVertexArray(VertexArrayID);
+	glGenVertexArrays(1, &VAO);
+	glBindVertexArray(VAO);
 
 	ShaderInfo  shaders[] = {
 	{ GL_VERTEX_SHADER,   "shaders/vertexShader.vert" },
-	{ GL_FRAGMENT_SHADER, "shaders/textureShader.frag" },
+	{ GL_FRAGMENT_SHADER, "shaders/fragmentShader.frag" },
 	{ GL_NONE, NULL }
 	};
 
 	programa = LoadShaders(shaders);
 	glUseProgram(programa);
 
-	// Get a handle for our "MVP" uniform
+	LightID = glGetUniformLocation(programa, "lightPos");
+
+	//Get a "handle" for the MVP uniform
 	MatrixID = glGetUniformLocation(programa, "MVP");
+	ViewMatrixID = glGetUniformLocation(programa, "V");
+	ModelMatrixID = glGetUniformLocation(programa, "M");
 
-	//Load texture
-	textura = loadTGA_glfw("Iron_Man_D.tga");
+	textura = loadFileTGA("Iron_Man_D.tga");			//Load texture
 
-	//Get a "handle" for textureSampler uniform
+
+	//Get a "handle" for the textureSampler uniform
 	TextureID = glGetUniformLocation(programa, "textureSampler");
 
-	//Read .obj file
-	if (loadOBJ("Iron_Man.obj", vertices, uvs, normals))
+	if (loadOBJ("Iron_Man.obj", vertices, uvs, normals))			//Read the .obj file
 		cout << "File loaded successfuly!" << endl;
 
 	//Create and Bind/Activate VBOs
@@ -311,26 +270,85 @@ int main(void) {
 	glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
 	glBufferData(GL_ARRAY_BUFFER, uvs.size() * sizeof(glm::vec2), &uvs[0], GL_STATIC_DRAW);
 
-	do{	
-		// Clear the screen
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glGenBuffers(1, &normalbuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
+	glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW);
+}
 
-		display();
+void display() {
+	ProjectionMatrix = glm::perspective(glm::radians(45.0f), float(WIDTH) / float(HEIGHT), 0.01f, 10000.f);	//Projection
+	ViewMatrix = glm::lookAt(
+		glm::vec3(0.0f, 3.0f, ZOOM),	// Posição da câmara no mundo
+		glm::vec3(0.0f, 1.0f, -1.0f),	// Direção para a qual a câmara esta apontada
+		glm::vec3(0.0f, 1.0f, 0.0f)		// Vector vertical
+	);
 
-		glfwSwapBuffers(window);
-		glfwPollEvents();
-	} // Check if the ESC key was pressed or the window was closed
-	while (glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS &&
-		glfwWindowShouldClose(window) == 0);
+	model1 = glm::rotate(glm::mat4(), anguloX*0.01f, glm::vec3(0, 1, 0));	//X
+	model2 = glm::rotate(glm::mat4(), anguloY*0.01f, glm::vec3(1, 0, 0));	//Y
+	ModelMatrix = model2 * model1;
 
-	// Cleanup VBO and shader
+	glm::mat4 MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
+
+	//Send transformation to the currently bound shader, in the "MVP" uniform
+	glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
+	glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &ModelMatrix[0][0]);
+	glUniformMatrix4fv(ViewMatrixID, 1, GL_FALSE, &ViewMatrix[0][0]);
+
+	glm::vec3 lightPos = glm::vec3(4, 4, 4);
+	glUniform3f(LightID, lightPos.x, lightPos.y, lightPos.z);
+
+	glActiveTexture(GL_TEXTURE0);				//Bind textura in Texture Unit 0
+	glBindTexture(GL_TEXTURE_2D, textura);
+	glUniform1i(TextureID, 0);					//Set "textureSampler" sampler to use Texture Unit 0
+
+	//1st Attribute Buffer -> Vertices
+	glEnableVertexAttribArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+	glVertexAttribPointer(
+		0,                  //attribute
+		3,                  //size
+		GL_FLOAT,           //type
+		GL_FALSE,           //normalized?
+		0,                  //stride
+		(void*)0            //array buffer offset
+	);
+
+	//2nd Attribute Buffer -> UVs
+	glEnableVertexAttribArray(1);
+	glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
+	glVertexAttribPointer(
+		1,                                //attribute
+		2,                                //size
+		GL_FLOAT,                         //type
+		GL_FALSE,                         //normalized?
+		0,                                //stride
+		(void*)0                          //array buffer offset
+	);
+
+	//3rd Attribute Buffer -> Normals
+	glEnableVertexAttribArray(2);
+	glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
+	glVertexAttribPointer(
+		2,                                //attribute
+		3,                                //size
+		GL_FLOAT,                         //type
+		GL_FALSE,						  //normalized?
+		0,                                //stride
+		(void*)0                          //array buffer offset
+	);
+
+	glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+
+	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
+	glDisableVertexAttribArray(2);
+}
+
+void CleanupVBOsShader(void) {
 	glDeleteBuffers(1, &vertexbuffer);
 	glDeleteBuffers(1, &uvbuffer);
+	glDeleteBuffers(1, &normalbuffer);
 	glDeleteProgram(programa);
 	glDeleteTextures(1, &textura);
-	glDeleteVertexArrays(1, &VertexArrayID);
-
-	// Close OpenGL window and terminate GLFW
-	glfwTerminate();
-	return 0;
+	glDeleteVertexArrays(1, &VAO);
 }
