@@ -17,6 +17,7 @@ GLuint	MatrixID,
 		uvbuffer,
 		normalbuffer,
 		programa,
+		frameCountID,
 		VAO;
 
 GLfloat ZOOM = 5.0f;
@@ -24,6 +25,7 @@ float anguloX = 0.0f, anguloY = 0.0f;
 bool buttonPressed = false;
 double xPrevPos, yPrevPos;
 static float updateRotX = 0, updateRotY = 0;
+float randomCount = 0.0f;
 
 //2 Models so it's easier to apply rotation on X and Y coordinates
 glm::mat4 model1 = glm::mat4(1.0f);
@@ -247,35 +249,40 @@ void init(void) {
 
 	LightID = glGetUniformLocation(programa, "lightPos");
 
-	//Get a "handle" for the MVP uniform
+	//Get a "handle" for the MVP, V and M uniforms in the current shaders
 	MatrixID = glGetUniformLocation(programa, "MVP");
 	ViewMatrixID = glGetUniformLocation(programa, "V");
 	ModelMatrixID = glGetUniformLocation(programa, "M");
 
-	textura = loadFileTGA("Iron_Man_D.tga");			//Load texture
+	textura = loadFileTGA("textures/Iron_Man_D.tga");			//Load texture
 
-
-	//Get a "handle" for the textureSampler uniform
+	//Get a "handle" for the "textureSampler" and "random" uniforms in the current shaders
 	TextureID = glGetUniformLocation(programa, "textureSampler");
+	frameCountID = glGetUniformLocation(programa, "random");
 
 	if (loadOBJ("Iron_Man.obj", vertices, uvs, normals))			//Read the .obj file
 		cout << "File loaded successfuly!" << endl;
 
 	//Create and Bind/Activate VBOs
+	// - Model Vertices
 	glGenBuffers(1, &vertexbuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);
 
+	// - Model Texture
 	glGenBuffers(1, &uvbuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
 	glBufferData(GL_ARRAY_BUFFER, uvs.size() * sizeof(glm::vec2), &uvs[0], GL_STATIC_DRAW);
 
+	// - Model Normals
 	glGenBuffers(1, &normalbuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
 	glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW);
 }
 
 void display() {
+	randomCount += 0.01;
+
 	ProjectionMatrix = glm::perspective(glm::radians(45.0f), float(WIDTH) / float(HEIGHT), 0.01f, 10000.f);	//Projection
 	ViewMatrix = glm::lookAt(
 		glm::vec3(0.0f, 3.0f, ZOOM),	// Posição da câmara no mundo
@@ -285,6 +292,7 @@ void display() {
 
 	model1 = glm::rotate(glm::mat4(), anguloX*0.01f, glm::vec3(0, 1, 0));	//X
 	model2 = glm::rotate(glm::mat4(), anguloY*0.01f, glm::vec3(1, 0, 0));	//Y
+
 	ModelMatrix = model2 * model1;
 
 	glm::mat4 MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
@@ -294,8 +302,13 @@ void display() {
 	glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &ModelMatrix[0][0]);
 	glUniformMatrix4fv(ViewMatrixID, 1, GL_FALSE, &ViewMatrix[0][0]);
 
+	//Send the light coordinates to the currently bound shader, in the "lightPos" uniform
 	glm::vec3 lightPos = glm::vec3(4, 4, 4);
 	glUniform3f(LightID, lightPos.x, lightPos.y, lightPos.z);
+
+	//Send 3 float values to the currently bound shader, in the "random" uniform
+	//Used to apply a color change in the texture
+	glUniform3f(frameCountID, sin(randomCount), cos(randomCount), sin(randomCount));
 
 	glActiveTexture(GL_TEXTURE0);				//Bind textura in Texture Unit 0
 	glBindTexture(GL_TEXTURE_2D, textura);
@@ -317,24 +330,24 @@ void display() {
 	glEnableVertexAttribArray(1);
 	glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
 	glVertexAttribPointer(
-		1,                                //attribute
-		2,                                //size
-		GL_FLOAT,                         //type
-		GL_FALSE,                         //normalized?
-		0,                                //stride
-		(void*)0                          //array buffer offset
+		1,
+		2,
+		GL_FLOAT,
+		GL_FALSE,
+		0,
+		(void*)0
 	);
 
 	//3rd Attribute Buffer -> Normals
 	glEnableVertexAttribArray(2);
 	glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
 	glVertexAttribPointer(
-		2,                                //attribute
-		3,                                //size
-		GL_FLOAT,                         //type
-		GL_FALSE,						  //normalized?
-		0,                                //stride
-		(void*)0                          //array buffer offset
+		2,
+		3,
+		GL_FLOAT,
+		GL_FALSE,
+		0,
+		(void*)0
 	);
 
 	glDrawArrays(GL_TRIANGLES, 0, vertices.size());

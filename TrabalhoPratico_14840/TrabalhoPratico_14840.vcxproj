@@ -132,6 +132,9 @@
     <None Include="shaders\vertexShader.vert" />
     <None Include="shaders\fragmentShader.frag" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="textures\Iron_Man_D.tga" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
