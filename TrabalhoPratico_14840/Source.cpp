@@ -35,6 +35,12 @@ std::vector< glm::vec3 > vertices;
 std::vector< glm::vec2 > uvs;
 std::vector< glm::vec3 > normals;
 
+//Mtl Properties
+glm::vec3 ka, kd, ks;
+float ns, ni, d;
+int illum;
+bool ambLight = true, dirLight = true, pLight = true, cLight = true, changeColor = false;
+
 void scrollCallback(GLFWwindow *window, double xoffset, double yoffset) {		// Incremento no zoom, varia com a distância da câmara
 	if(yoffset == -1)		ZOOM += fabs(ZOOM) * 0.2f;	// Se faz zoom in
 	else if (yoffset == 1) ZOOM -= fabs(ZOOM) * 0.2f;	//Senão, se faz zoom out
@@ -46,6 +52,30 @@ void cursorPosCallback(GLFWwindow *window, double xPos, double yPos) {
 	if (buttonPressed) {
 		anguloX = (float)(((xPos - xPrevPos) * 180.0) / WIDTH) + updateRotX;
 		anguloY = (float)(((yPos - yPrevPos) * 180.0) / HEIGHT)+ updateRotY;
+	}
+}
+
+void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	if (key == GLFW_KEY_1 && action == GLFW_PRESS) {
+		if (ambLight) ambLight = false;
+		else ambLight = true;
+	}
+	else if (key == GLFW_KEY_2 && action == GLFW_PRESS) {
+		if (dirLight) dirLight = false;
+		else dirLight = true;
+	}
+	else if (key == GLFW_KEY_3 && action == GLFW_PRESS) {
+		if (pLight) pLight = false;
+		else pLight = true;
+	}
+	else if (key == GLFW_KEY_4 && action == GLFW_PRESS) {
+		if (cLight) cLight = false;
+		else cLight = true;
+	}
+	else if (key == GLFW_KEY_5 && action == GLFW_PRESS) {
+		if (changeColor) changeColor = false;
+		else changeColor = true;
 	}
 }
 
@@ -193,6 +223,7 @@ int main(void) {
 	glfwSetMouseButtonCallback(window, mouseButtonCallback);
 	glfwSetCursorPosCallback(window, cursorPosCallback);
 	glfwSetScrollCallback(window, scrollCallback);
+	glfwSetKeyCallback(window, keyCallback);
 
 	// Initialize GLEW
 	glewExperimental = true; // Needed for core profile
@@ -254,14 +285,19 @@ void init(void) {
 	ViewMatrixID = glGetUniformLocation(programa, "V");
 	ModelMatrixID = glGetUniformLocation(programa, "M");
 
+	const char * mtl = loadOBJ("Iron_Man.obj", vertices, uvs, normals);
+	loadMTL(mtl, ka, kd, ks, ns, ni, d, illum);
+
 	textura = loadFileTGA("textures/Iron_Man_D.tga");			//Load texture
 
 	//Get a "handle" for the "textureSampler" and "random" uniforms in the current shaders
 	TextureID = glGetUniformLocation(programa, "textureSampler");
 	frameCountID = glGetUniformLocation(programa, "random");
 
-	if (loadOBJ("Iron_Man.obj", vertices, uvs, normals))			//Read the .obj file
-		cout << "File loaded successfuly!" << endl;
+	//if (loadOBJ("Iron_Man.obj", vertices, uvs, normals)) {			//Read the .obj file
+	//	cout << "File loaded successfuly!" << endl;
+	//
+	//}
 
 	//Create and Bind/Activate VBOs
 	// - Model Vertices
@@ -281,7 +317,14 @@ void init(void) {
 }
 
 void display() {
-	randomCount += 0.01;
+	//Texture's color change effect (Press 5 on your keyboard to Activate/Deactivate it)
+	if (changeColor) {
+		randomCount += 0.01;
+		//Send 3 float values to the currently bound shader, in the "random" uniform
+		//Used to apply a color change in the texture
+		glUniform3f(frameCountID, sin(randomCount), cos(randomCount), sin(randomCount));
+	}
+	else glUniform3f(frameCountID, 1, 1, 1);
 
 	ProjectionMatrix = glm::perspective(glm::radians(45.0f), float(WIDTH) / float(HEIGHT), 0.01f, 10000.f);	//Projection
 	ViewMatrix = glm::lookAt(
@@ -305,10 +348,6 @@ void display() {
 	//Send the light coordinates to the currently bound shader, in the "lightPos" uniform
 	glm::vec3 lightPos = glm::vec3(4, 4, 4);
 	glUniform3f(LightID, lightPos.x, lightPos.y, lightPos.z);
-
-	//Send 3 float values to the currently bound shader, in the "random" uniform
-	//Used to apply a color change in the texture
-	glUniform3f(frameCountID, sin(randomCount), cos(randomCount), sin(randomCount));
 
 	glActiveTexture(GL_TEXTURE0);				//Bind textura in Texture Unit 0
 	glBindTexture(GL_TEXTURE_2D, textura);

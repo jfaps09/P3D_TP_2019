@@ -21,15 +21,15 @@ void main(){
 	//Position of the vertex, in worldspace : M * position
 	Position_world = (M * vec4(vertexPos_model,1)).xyz;
 	
-	//Vector that goes from the vertex to the camera, in camera space
+	//Vector that goes from the vertex to the camera
 	vec3 vertexPos_cam = ( V * M * vec4(vertexPos_model,1)).xyz;
 	EyeDirection_cam = vec3(0,0,0) - vertexPos_cam;
 
-	//Vector that goes from the vertex to the light, in camera space
+	//Vector that goes from the vertex to the light
 	vec3 LightPos_cam = ( V * vec4(lightPos,1)).xyz;
 	LightDirection_cam = LightPos_cam + EyeDirection_cam;
 	
-	//Vertex normal, in camera space
+	//Vertex normal
 	Normal_cam = ( V * M * vec4(vertexNorm_model,0)).xyz;
 	UV = vertexUV;
 }

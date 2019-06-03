@@ -20,7 +20,15 @@ using namespace std;
 
 #include "LoadShaders.h"
 
-bool loadOBJ(const char * path, std::vector < glm::vec3 > & out_vertices, std::vector < glm::vec2 > & out_uvs, std::vector < glm::vec3 > & out_normals);
+const char * loadOBJ(const char * path,
+			std::vector < glm::vec3 >& out_vertices,
+			std::vector < glm::vec2 >& out_uvs,
+			std::vector < glm::vec3 >& out_normals);
+bool loadMTL(const char * path,
+	glm::vec3& ka,
+	glm::vec3& kd,
+	glm::vec3& ks,
+	float& ns, float& ni, float& d, int& illum);
 void print_gl_info();
 void print_error(int error, const char *description);
 void init(void);

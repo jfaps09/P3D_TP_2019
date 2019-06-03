@@ -2,12 +2,13 @@
 
 #include "Header.h"
 
-bool loadOBJ(
+const char * loadOBJ(
 			const char * path,
-			std::vector<glm::vec3> & out_vertices,
-			std::vector<glm::vec2> & out_uvs,
-			std::vector<glm::vec3> & out_normals
+			std::vector<glm::vec3>& out_vertices,
+			std::vector<glm::vec2>& out_uvs,
+			std::vector<glm::vec3>& out_normals
 		) {
+			char mtl[30];
 			printf("Loading OBJ file:\n%s...\n", path);
 
 			std::vector<unsigned int> vertexIndices, uvIndices, normalIndices;
@@ -24,19 +25,15 @@ bool loadOBJ(
 			}
 
 			while (1) {
-
 				char lineHeader[128];
-				// read the first word of the line
-				int res = fscanf(file, "%s", lineHeader);
+				int res = fscanf(file, "%s", lineHeader);				//read the first word of the line
 				if (res == EOF)
-					break; // EOF = End Of File. Quit the loop.
+					break;		//End Of File, quit the loop.
 
-				// else : parse lineHeader
 				if (strcmp(lineHeader, "mtllib") == 0) {
-					char mtl[13];
 					fscanf(file, "%s\n", &mtl);
-					printf("%s\n", mtl);
-				}else if (strcmp(lineHeader, "v") == 0) {
+				}
+				else if (strcmp(lineHeader, "v") == 0) {
 					glm::vec3 vertex;
 					fscanf(file, "%f %f %f\n", &vertex.x, &vertex.y, &vertex.z);
 					temp_vertices.push_back(vertex);
@@ -52,11 +49,10 @@ bool loadOBJ(
 					temp_normals.push_back(normal);
 				}
 				else if (strcmp(lineHeader, "f") == 0) {
-					std::string vertex1, vertex2, vertex3;
 					unsigned int vertexIndex[3], uvIndex[3], normalIndex[3];
 					int matches = fscanf(file, "%d/%d/%d %d/%d/%d %d/%d/%d\n", &vertexIndex[0], &uvIndex[0], &normalIndex[0], &vertexIndex[1], &uvIndex[1], &normalIndex[1], &vertexIndex[2], &uvIndex[2], &normalIndex[2]);
 					if (matches != 9) {
-						printf("File can't be read by our simple parser :-( Try exporting with other options\n");
+						printf("File can't be read\n");
 						fclose(file);
 						return false;
 					}
@@ -71,32 +67,97 @@ bool loadOBJ(
 					normalIndices.push_back(normalIndex[2]);
 				}
 				else {
-					// Probably a comment, eat up the rest of the line
-					char stupidBuffer[1000];
-					fgets(stupidBuffer, 1000, file);
+					//Caso apanhe um comment...
+					char coise[1000];
+					fgets(coise, 1000, file);
 				}
-
 			}
 
-			// For each vertex of each triangle
+			//For each vertex of each triangle
 			for (unsigned int i = 0; i < vertexIndices.size(); i++) {
 
-				// Get the indices of its attributes
+				//Get the indices of its attributes
 				unsigned int vertexIndex = vertexIndices[i];
 				unsigned int uvIndex = uvIndices[i];
 				unsigned int normalIndex = normalIndices[i];
 
-				// Get the attributes thanks to the index
+				//Get the attributes thanks to the index
 				glm::vec3 vertex = temp_vertices[vertexIndex - 1];
 				glm::vec2 uv = temp_uvs[uvIndex - 1];
 				glm::vec3 normal = temp_normals[normalIndex - 1];
 
-				// Put the attributes in buffers
+				//Put the attributes in buffers
 				out_vertices.push_back(vertex);
 				out_uvs.push_back(uv);
 				out_normals.push_back(normal);
 
 			}
 			fclose(file);
-			return true;
+			return mtl;
 		}
+
+bool loadMTL(const char * path, glm::vec3& ka, glm::vec3& kd, glm::vec3& ks, float& ns, float& ni, float& d, int& illum) {
+	FILE * file = fopen(path, "r");
+
+	if (file == NULL) {
+		printf("Impossible to open the file! File maybe doeesn't exist?\n");
+		getchar();
+		return NULL;
+	}
+
+	while (1) {
+		char lineHeader[128];
+		int res = fscanf(file, "%s", lineHeader);		//read the first word of the line
+		if (res == EOF)
+			break;										//End Of File, quit the loop.
+
+		//NS --> Specular exponent (ranges between 0 and 1000)
+		//Controls the glossiness in the phong shading model
+		if (strcmp(lineHeader, "Ns") == 0) {
+			fscanf(file, "%f\n", &ns);
+		}
+		else if (strcmp(lineHeader, "Ka") == 0) {
+			fscanf(file, "%f %f %f\n", &ka.x, &ka.y, &ka.z);
+		}
+		else if (strcmp(lineHeader, "Kd") == 0) {
+			fscanf(file, "%f %f %f\n", &kd.x, &kd.y, &kd.z);
+		}
+		else if (strcmp(lineHeader, "Ks") == 0) {
+			fscanf(file, "%f %f %f\n", &ks.x, &ks.y, &ks.z);
+		}
+		else if (strcmp(lineHeader, "Ni") == 0) {
+			fscanf(file, "%f\n", &ni);
+		}
+		//d --> dissolve (0.0 - transparent | 1.0 - fully opaque)
+		else if (strcmp(lineHeader, "d") == 0) {
+			fscanf(file, "%f\n", &d);
+		}
+		//illum
+		//	0. Color on and Ambient off
+		//	1. Color on and Ambient on
+		//	2. Highlight on
+		//	3. Reflection on and Ray trace on
+		//	4. Transparency: Glass on, Reflection : Ray trace on
+		//	5. Reflection : Fresnel on and Ray trace on
+		//	6. Transparency : Refraction on, Reflection : Fresnel off and Ray trace on
+		//	7. Transparency : Refraction on, Reflection : Fresnel on and Ray trace on
+		//	8. Reflection on and Ray trace off
+		//	9. Transparency : Glass on, Reflection : Ray trace off
+		//	10. Casts shadows onto invisible surfaces
+		else if (strcmp(lineHeader, "illum") == 0) {
+			fscanf(file, "%d\n", &illum);
+		}
+		else if (strcmp(lineHeader, "map_Kd") == 0) {
+			//const char * hum;
+			//fscanf(file, "%f\n", &lol);		
+		}
+		else {
+			//Caso apanhe um comment...
+			char coise[1000];
+			fgets(coise, 1000, file);
+		}
+	}
+
+	fclose(file);
+	return true;
+}
