@@ -8,7 +8,7 @@ GLuint loadFileTGA(const char * imagepath) {
 	GLuint texture;
 	glGenTextures(1, &texture);
 
-	//Bind the newly created texture --> all future texture functions will modify this texture
+	//Bind the newly created texture
 	glBindTexture(GL_TEXTURE_2D, texture);
 
 	//Flip texture image on load, since texture coordinates are loaded inverted vertically

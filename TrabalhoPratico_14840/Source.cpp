@@ -58,24 +58,49 @@ void cursorPosCallback(GLFWwindow *window, double xPos, double yPos) {
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	if (key == GLFW_KEY_1 && action == GLFW_PRESS) {
-		if (ambLight) ambLight = false;
-		else ambLight = true;
+		if (ambLight) {
+			ambLight = false;
+			cout << "Ambient Light: OFF" << endl;
+		}else {
+			ambLight = true;
+			cout << "Ambient Light: ON" << endl;
+		}
 	}
 	else if (key == GLFW_KEY_2 && action == GLFW_PRESS) {
-		if (dirLight) dirLight = false;
-		else dirLight = true;
+		if (dirLight) {
+			dirLight = false;
+			cout << "Directional Light: OFF" << endl;
+		}else{
+			dirLight = true;
+			cout << "Directional Light: ON" << endl;
+		}
 	}
 	else if (key == GLFW_KEY_3 && action == GLFW_PRESS) {
-		if (pLight) pLight = false;
-		else pLight = true;
+		if (pLight){
+			pLight = false;
+			cout << "Ponctual Light: OFF" << endl;
+		}else {
+			pLight = true;
+			cout << "Ponctual Light: ON" << endl;
+		}
 	}
 	else if (key == GLFW_KEY_4 && action == GLFW_PRESS) {
-		if (cLight) cLight = false;
-		else cLight = true;
+		if (cLight) {
+			cLight = false;
+			cout << "Cone Light: OFF" << endl;
+		}else{
+			cLight = true;
+			cout << "Cone Light: ON" << endl;
+		}
 	}
 	else if (key == GLFW_KEY_5 && action == GLFW_PRESS) {
-		if (changeColor) changeColor = false;
-		else changeColor = true;
+		if (changeColor) {
+			changeColor = false;
+			cout << "Color Effect: OFF" << endl;
+		}else {
+			changeColor = true;
+			cout << "Color Effect: ON" << endl;
+		}
 	}
 }
 
