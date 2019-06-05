@@ -12,7 +12,10 @@ GLuint	MatrixID,
 		TextureID,
 		ViewMatrixID,
 		ModelMatrixID,
-		LightID,
+		ambLightID,
+		dirLightID,
+		pLightID,
+		spotLightID,
 		vertexbuffer,
 		uvbuffer,
 		normalbuffer,
@@ -39,7 +42,7 @@ std::vector< glm::vec3 > normals;
 glm::vec3 ka, kd, ks;
 float ns, ni, d;
 int illum;
-bool ambLight = true, dirLight = true, pLight = true, cLight = true, changeColor = false;
+bool ambLight = true, dirLight = true, pLight = true, spotLight = true, changeColor = false;
 
 void scrollCallback(GLFWwindow *window, double xoffset, double yoffset) {		// Incremento no zoom, varia com a distância da câmara
 	if(yoffset == -1)		ZOOM += fabs(ZOOM) * 0.2f;	// Se faz zoom in
@@ -60,36 +63,44 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 	if (key == GLFW_KEY_1 && action == GLFW_PRESS) {
 		if (ambLight) {
 			ambLight = false;
+			glUniform1i(ambLightID, 0);
 			cout << "Ambient Light: OFF" << endl;
 		}else {
 			ambLight = true;
+			glUniform1i(ambLightID, 1);
 			cout << "Ambient Light: ON" << endl;
 		}
 	}
 	else if (key == GLFW_KEY_2 && action == GLFW_PRESS) {
 		if (dirLight) {
 			dirLight = false;
+			glUniform1i(dirLightID, 0);
 			cout << "Directional Light: OFF" << endl;
 		}else{
 			dirLight = true;
+			glUniform1i(dirLightID, 1);
 			cout << "Directional Light: ON" << endl;
 		}
 	}
 	else if (key == GLFW_KEY_3 && action == GLFW_PRESS) {
 		if (pLight){
 			pLight = false;
+			glUniform1i(pLightID, 0);
 			cout << "Ponctual Light: OFF" << endl;
 		}else {
 			pLight = true;
+			glUniform1i(pLightID, 1);
 			cout << "Ponctual Light: ON" << endl;
 		}
 	}
 	else if (key == GLFW_KEY_4 && action == GLFW_PRESS) {
-		if (cLight) {
-			cLight = false;
+		if (spotLight) {
+			spotLight = false;
+			glUniform1i(spotLightID, 0);
 			cout << "Cone Light: OFF" << endl;
 		}else{
-			cLight = true;
+			spotLight = true;
+			glUniform1i(spotLightID, 1);
 			cout << "Cone Light: ON" << endl;
 		}
 	}
@@ -287,6 +298,11 @@ int main(void) {
 void init(void) {
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
+	// ****************************************************
+	// Definir a janela de visualização (viewport)
+	// ****************************************************
+	glViewport(0, 0, WIDTH, HEIGHT);
+
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);			//Accept fragment if it's closer to the camera than the previous one
 	glEnable(GL_CULL_FACE);
@@ -295,15 +311,13 @@ void init(void) {
 	glBindVertexArray(VAO);
 
 	ShaderInfo  shaders[] = {
-	{ GL_VERTEX_SHADER,   "shaders/vertexShader.vert" },
-	{ GL_FRAGMENT_SHADER, "shaders/fragmentShader.frag" },
-	{ GL_NONE, NULL }
+		{ GL_VERTEX_SHADER,   "shaders/vertexShader.vert" },
+		{ GL_FRAGMENT_SHADER, "shaders/fragmentShader.frag" },
+		{ GL_NONE, NULL }
 	};
 
 	programa = LoadShaders(shaders);
 	glUseProgram(programa);
-
-	LightID = glGetUniformLocation(programa, "lightPos");
 
 	//Get a "handle" for the MVP, V and M uniforms in the current shaders
 	MatrixID = glGetUniformLocation(programa, "MVP");
@@ -319,10 +333,14 @@ void init(void) {
 	TextureID = glGetUniformLocation(programa, "textureSampler");
 	frameCountID = glGetUniformLocation(programa, "random");
 
-	//if (loadOBJ("Iron_Man.obj", vertices, uvs, normals)) {			//Read the .obj file
-	//	cout << "File loaded successfuly!" << endl;
-	//
-	//}
+	ambLightID = glGetUniformLocation(programa, "ambLightUni");
+	glUniform1i(ambLightID, illum);
+	dirLightID = glGetUniformLocation(programa, "dirLightUni");
+	glUniform1i(dirLightID, illum);
+	pLightID = glGetUniformLocation(programa, "pLightUni");
+	glUniform1i(pLightID, illum);
+	spotLightID = glGetUniformLocation(programa, "spotLightUni");
+	glUniform1i(spotLightID, illum);
 
 	//Create and Bind/Activate VBOs
 	// - Model Vertices
@@ -339,6 +357,52 @@ void init(void) {
 	glGenBuffers(1, &normalbuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
 	glBufferData(GL_ARRAY_BUFFER, normals.size() * sizeof(glm::vec3), &normals[0], GL_STATIC_DRAW);
+
+	// Fonte de luz ambiente global
+	glProgramUniform3fv(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "ambientLight.ambient"), 1, glm::value_ptr(glm::vec3(0.6, 0.6, 0.6)));
+
+	// Fonte de luz direcional
+	glProgramUniform3fv(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "directionalLight.direction"), 1, glm::value_ptr(glm::vec3(1.0, 0.0, 0.0)));
+	glProgramUniform3fv(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "directionalLight.ambient"), 1, glm::value_ptr(glm::vec3(0.2, 0.2, 0.2)));
+	glProgramUniform3fv(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "directionalLight.diffuse"), 1, glm::value_ptr(glm::vec3(1.0, 1.0, 1.0)));
+	glProgramUniform3fv(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "directionalLight.specular"), 1, glm::value_ptr(glm::vec3(1.0, 1.0, 1.0)));
+
+	// Fonte de luz pontual #1
+	glProgramUniform3fv(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "pointLight[0].position"), 1, glm::value_ptr(glm::vec3(0.0, 0.0, 5.0)));
+	glProgramUniform3fv(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "pointLight[0].ambient"), 1, glm::value_ptr(glm::vec3(0.1, 0.1, 0.1)));
+	glProgramUniform3fv(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "pointLight[0].diffuse"), 1, glm::value_ptr(glm::vec3(1.0, 1.0, 1.0)));
+	glProgramUniform3fv(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "pointLight[0].specular"), 1, glm::value_ptr(glm::vec3(1.0, 1.0, 1.0)));
+	glProgramUniform1f(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "pointLight[0].constant"), 1.0f);
+	glProgramUniform1f(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "pointLight[0].linear"), 0.06f);
+	glProgramUniform1f(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "pointLight[0].quadratic"), 0.02f);
+
+	// Fonte de luz pontual #2
+	glProgramUniform3fv(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "pointLight[1].position"), 1, glm::value_ptr(glm::vec3(-2.0, 2.0, 5.0)));
+	glProgramUniform3fv(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "pointLight[1].ambient"), 1, glm::value_ptr(glm::vec3(0.1, 0.1, 0.1)));
+	glProgramUniform3fv(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "pointLight[1].diffuse"), 1, glm::value_ptr(glm::vec3(1.0, 1.0, 1.0)));
+	glProgramUniform3fv(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "pointLight[1].specular"), 1, glm::value_ptr(glm::vec3(1.0, 1.0, 1.0)));
+	glProgramUniform1f(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "pointLight[1].constant"), 1.0f);
+	glProgramUniform1f(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "pointLight[1].linear"), 0.06f);
+	glProgramUniform1f(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "pointLight[1].quadratic"), 0.02f);
+
+	// Fonte de luz cónica
+	glProgramUniform3fv(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "spotLight.position"), 1, glm::value_ptr(glm::vec3(0.0, 0.0, 3.0)));
+	glProgramUniform3fv(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "spotLight.ambient"), 1, glm::value_ptr(glm::vec3(0.2, 0.2, 0.2)));
+	glProgramUniform3fv(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "spotLight.diffuse"), 1, glm::value_ptr(glm::vec3(0.8, 0.8, 0.8)));
+	glProgramUniform3fv(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "spotLight.specular"), 1, glm::value_ptr(glm::vec3(1.0, 1.0, 1.0)));
+	glProgramUniform1f(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "spotLight.constant"), 1.0f);
+	glProgramUniform1f(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "spotLight.linear"), 0.09f);
+	glProgramUniform1f(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "spotLight.quadratic"), 0.032f);
+	glProgramUniform1f(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "spotLight.cutOff"), glm::cos(glm::radians(12.5f)));
+	glProgramUniform1f(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "spotLight.outerCutOff"), glm::cos(glm::radians(17.5f)));
+	glProgramUniform3fv(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "spotLight.direction"), 1, glm::value_ptr(glm::vec3(0.0f, 1.0f, -1.0f)));
+
+	// Fonte de Luz do modelo (proveniente do ficheiro mtl)
+	glProgramUniform3fv(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "material.emissive"), 1, glm::value_ptr(glm::vec3(0.3, 0.3, 0.3)));
+	glProgramUniform3fv(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "material.ambient"), 1, glm::value_ptr(ka));
+	glProgramUniform3fv(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "material.diffuse"), 1, glm::value_ptr(kd));
+	glProgramUniform3fv(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "material.specular"), 1, glm::value_ptr(ks));
+	glProgramUniform1f(programa, glGetProgramResourceLocation(programa, GL_UNIFORM, "material.shininess"), ns);		//Expoente especular
 }
 
 void display() {
@@ -347,9 +411,9 @@ void display() {
 		randomCount += 0.01;
 		//Send 3 float values to the currently bound shader, in the "random" uniform
 		//Used to apply a color change in the texture
-		glUniform3f(frameCountID, sin(randomCount), cos(randomCount), sin(randomCount));
+		glUniform4f(frameCountID, sin(randomCount), cos(randomCount), sin(randomCount), 1.0f);
 	}
-	else glUniform3f(frameCountID, 1, 1, 1);
+	else glUniform4f(frameCountID, 1, 1, 1, 1);
 
 	ProjectionMatrix = glm::perspective(glm::radians(45.0f), float(WIDTH) / float(HEIGHT), 0.01f, 10000.f);	//Projection
 	ViewMatrix = glm::lookAt(
@@ -369,10 +433,6 @@ void display() {
 	glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
 	glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &ModelMatrix[0][0]);
 	glUniformMatrix4fv(ViewMatrixID, 1, GL_FALSE, &ViewMatrix[0][0]);
-
-	//Send the light coordinates to the currently bound shader, in the "lightPos" uniform
-	glm::vec3 lightPos = glm::vec3(4, 4, 4);
-	glUniform3f(LightID, lightPos.x, lightPos.y, lightPos.z);
 
 	glActiveTexture(GL_TEXTURE0);				//Bind textura in Texture Unit 0
 	glBindTexture(GL_TEXTURE_2D, textura);
